@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>ギャンブル収支管理</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #f2f2f7; font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif; padding: 12px; }
+.app { max-width: 390px; margin: 0 auto; }
+.sec { font-size: 11px; font-weight: 500; color: #8e8e93; letter-spacing: 0.08em; text-transform: uppercase; margin: 16px 0 8px; }
+.card { background: #fff; border-radius: 12px; padding: 0 16px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+.irow { display: flex; align-items: center; gap: 8px; padding: 12px 0; border-bottom: 0.5px solid #e5e5ea; min-height: 48px; }
+.irow:last-child { border-bottom: none; }
+.ilabel { font-size: 14px; color: #3c3c43; white-space: nowrap; flex-shrink: 0; }
+.ispacer { flex: 1; min-width: 8px; }
+.iwrap { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.iwrap input[type=number] { width: 110px; font-size: 15px; text-align: right; border: none; outline: none; background: transparent; color: #1c1c1e; }
+.iwrap input[type=text] { width: 140px; font-size: 14px; border: none; outline: none; background: transparent; color: #1c1c1e; text-align: right; }
+.unit { font-size: 13px; color: #8e8e93; white-space: nowrap; }
+.summary-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 8px; }
+.metric { background: #fff; border-radius: 12px; padding: 12px 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+.mlabel { font-size: 11px; color: #8e8e93; margin-bottom: 4px; }
+.mval { font-size: 24px; font-weight: 500; color: #1c1c1e; }
+.plus{color:#1baf7a;}.minus{color:#e34948;}.neutral{color:#1c1c1e;}
+.bar-track { background: #e5e5ea; border-radius: 4px; height: 6px; overflow: hidden; }
+.bar-fill { height: 6px; border-radius: 4px; transition: width 0.3s ease; background: #2a78d6; }
+.blabel { display: flex; justify-content: space-between; font-size: 11px; color: #8e8e93; margin-top: 4px; }
+.result-block { background: #fff; border-radius: 12px; padding: 14px 16px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+.rhead { font-size: 12px; color: #8e8e93; margin-bottom: 8px; }
+.rbig { font-size: 26px; font-weight: 500; line-height: 1.3; color: #1c1c1e; }
+.rbig.ok{color:#1baf7a;}.rbig.ng{color:#e34948;}.rbig.neutral{color:#1c1c1e;}
+.future-card { background: #fff; border-radius: 12px; padding: 14px 16px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+.future-head { font-size: 12px; color: #2a78d6; font-weight: 500; margin-bottom: 12px; }
+.inner-card { background: #f2f2f7; border-radius: 10px; padding: 0 16px; margin-bottom: 12px; }
+.divider { border: none; border-top: 0.5px solid #e5e5ea; margin: 14px 0; }
+.save-btn { width: 100%; padding: 14px; background: #2a78d6; color: #fff; border: none; border-radius: 12px; font-size: 16px; font-weight: 500; cursor: pointer; margin-bottom: 8px; }
+.save-btn:active{opacity:0.8;}.save-btn:disabled{background:#c7c7cc;cursor:default;}
+.del-all-btn { width: 100%; padding: 12px; background: #fff; border: 0.5px solid #e34948; border-radius: 12px; font-size: 14px; font-weight: 500; color: #e34948; cursor: pointer; margin-bottom: 8px; }
+.del-all-btn:active{opacity:0.7;}
+.toast { font-size: 13px; text-align: center; padding: 10px; border-radius: 10px; margin-bottom: 8px; display: none; }
+.toast.ok{background:#e1f5ee;color:#0f6e56;}.toast.err{background:#fcebeb;color:#a32d2d;}
+.hist-item { background: #fff; border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); position: relative; }
+.hist-date { font-size: 11px; color: #8e8e93; margin-bottom: 6px; }
+.hist-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px 12px; margin-bottom: 4px; }
+.hist-row { display: flex; justify-content: space-between; font-size: 13px; }
+.hist-label{color:#8e8e93;}.hist-val{font-weight:500;color:#1c1c1e;}
+.hist-val.plus{color:#1baf7a;}.hist-val.minus{color:#e34948;}
+.hist-memo { font-size: 12px; color: #3c3c43; margin-top: 6px; padding-top: 6px; border-top: 0.5px solid #e5e5ea; }
+.hist-del-btn { width: 100%; margin-top: 10px; padding: 8px; background: #fff5f5; border: 0.5px solid #e34948; border-radius: 8px; font-size: 13px; color: #e34948; cursor: pointer; }
+.hist-del-btn:active{opacity:0.7;}
+.no-hist { font-size: 14px; color: #8e8e93; text-align: center; padding: 24px 0; }
+.load-btn { width: 100%; padding: 12px; background: #fff; border: 0.5px solid #e5e5ea; border-radius: 12px; font-size: 14px; color: #3c3c43; cursor: pointer; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+.tabs { display: flex; gap: 4px; margin-bottom: 12px; background: #e5e5ea; border-radius: 10px; padding: 3px; }
+.tab { flex: 1; padding: 8px; text-align: center; font-size: 13px; font-weight: 500; border-radius: 8px; cursor: pointer; color: #8e8e93; border: none; background: transparent; }
+.tab.active { background: #fff; color: #1c1c1e; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.page{display:none;}.page.active{display:block;}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('calc')">📊 計算</button>
+    <button class="tab" onclick="showTab('hist')">📋 履歴</button>
+  </div>
+
+  <!-- 計算ページ -->
+  <div class="page active" id="page-calc">
+    <div class="sec">基本入力</div>
+    <div class="card">
+      <div class="irow">
+        <span class="ilabel">💴 使ったお金</span>
+        <span class="ispacer"></span>
+        <div class="iwrap"><input type="number" id="spent" value="10000" min="0" step="100" inputmode="numeric" oninput="calc()"><span class="unit">円</span></div>
+      </div>
+      <div class="irow">
+        <span class="ilabel">💰 戻ってきたお金</span>
+        <span class="ispacer"></span>
+        <div class="iwrap"><input type="number" id="returned" value="8500" min="0" step="100" inputmode="numeric" oninput="calc()"><span class="unit">円</span></div>
+      </div>
+    </div>
+
+    <div class="sec">収支サマリー</div>
+    <div class="summary-grid">
+      <div class="metric"><div class="mlabel">収支</div><div class="mval" id="balance">—</div></div>
+      <div class="metric"><div class="mlabel">回収率</div><div class="mval" id="rate">—</div></div>
+    </div>
+    <div class="bar-track"><div class="bar-fill" id="bar" style="width:0%;"></div></div>
+    <div class="blabel"><span>0%</span><span id="bar-label">—</span><span>100%</span></div>
+
+    <div class="divider"></div>
+
+    <div class="sec">目標設定</div>
+    <div class="card">
+      <div class="irow">
+        <span class="ilabel">🎯 目標回収率</span>
+        <span class="ispacer"></span>
+        <div class="iwrap"><input type="number" id="goalRate" value="90" min="1" max="300" step="1" inputmode="numeric" oninput="calc()"><span class="unit">%</span></div>
+      </div>
+      <div class="irow">
+        <span class="ilabel">🪙 手元に残したい金額</span>
+        <span class="ispacer"></span>
+        <div class="iwrap"><input type="number" id="goalAmount" value="0" min="0" step="100" inputmode="numeric" oninput="calc()"><span class="unit">円</span></div>
+      </div>
+    </div>
+
+    <div class="sec">目標達成シミュレーション</div>
+    <div class="result-block">
+      <div class="rhead">🎯 目標回収率</div>
+      <div class="rbig" id="r-val">—</div>
+    </div>
+    <div class="result-block">
+      <div class="rhead">🪙 手元に残したい金額</div>
+      <div class="rbig" id="a-val">—</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="sec">追加シミュレーション</div>
+    <div class="future-card">
+      <div class="future-head">➕ これからいくら使う予定？</div>
+      <div class="inner-card">
+        <div class="irow" style="border-bottom:none;">
+          <span class="ilabel">💴 追加で使う金額</span>
+          <span class="ispacer"></span>
+          <div class="iwrap"><input type="number" id="future" value="5000" min="0" step="100" inputmode="numeric" oninput="calc()"><span class="unit">円</span></div>
+        </div>
+      </div>
+      <div class="result-block" style="margin-bottom:8px;box-shadow:none;background:#f2f2f7;">
+        <div class="rhead">🎯 目標回収率を達成するには</div>
+        <div class="rbig" id="f-r-val">—</div>
+      </div>
+      <div class="result-block" style="margin-bottom:0;box-shadow:none;background:#f2f2f7;">
+        <div class="rhead">🪙 目標金額を残すには</div>
+        <div class="rbig" id="f-a-val">—</div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="sec">スプレッドシートに記録</div>
+    <div class="card">
+      <div class="irow">
+        <span class="ilabel">📝 メモ（任意）</span>
+        <span class="ispacer"></span>
+        <div class="iwrap"><input type="text" id="memo" placeholder="例：競馬" inputmode="text"></div>
+      </div>
+    </div>
+    <button class="save-btn" id="save-btn" onclick="saveRecord()">💾 この内容を記録する</button>
+    <div class="toast" id="toast"></div>
+  </div>
+
+  <!-- 履歴ページ -->
+  <div class="page" id="page-hist">
+    <button class="load-btn" onclick="loadHistory()">🔄 履歴を読み込む</button>
+    <button class="del-all-btn" id="del-all-btn" onclick="deleteAll()" style="display:none;">🗑️ 履歴を全部消すず</button>
+    <div id="hist-list"><div class="no-hist">「履歴を読み込む」を押してほしいず</div></div>
+  </div>
+</div>
+
+<script>
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbxHTPjCXdjS1kZedKAh9mBDi3BIytmMz2BKMEGVqdx1FFDfmoFNslrhZGaD-xU-nPv0/exec';
+
+function fn(n) { return Math.round(Math.abs(n)).toLocaleString('ja-JP') + '円'; }
+
+function showTab(t) {
+  document.querySelectorAll('.tab').forEach((el,i) => el.classList.toggle('active', ['calc','hist'][i]===t));
+  document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
+  document.getElementById('page-'+t).classList.add('active');
+}
+
+function setResult(valEl, diff) {
+  if (Math.abs(diff) < 1)  { valEl.textContent = '達成してるず。ぷ～ん。'; valEl.className = 'rbig ok'; }
+  else if (diff > 0)        { valEl.textContent = fn(diff) + '　未達だず～'; valEl.className = 'rbig ng'; }
+  else                       { valEl.textContent = fn(-diff) + '　超過してるず～'; valEl.className = 'rbig ok'; }
+}
+
+function setFuture(valEl, extra, type) {
+  if (extra <= 0)         { valEl.textContent = '達成してるず。ぷ～ん。'; valEl.className = 'rbig ok'; }
+  else if (type==='rate') { valEl.textContent = fn(extra) + '　回収必要だず～'; valEl.className = 'rbig ng'; }
+  else                     { valEl.textContent = fn(extra) + '　回収で達成だず～'; valEl.className = 'rbig neutral'; }
+}
+
+function calc() {
+  const spent    = parseFloat(document.getElementById('spent').value)      || 0;
+  const returned = parseFloat(document.getElementById('returned').value)   || 0;
+  const goalRate = parseFloat(document.getElementById('goalRate').value)   || 90;
+  const goalAmt  = parseFloat(document.getElementById('goalAmount').value) || 0;
+  const future   = parseFloat(document.getElementById('future').value)     || 0;
+  const balance  = returned - spent;
+  const rate     = spent > 0 ? (returned / spent) * 100 : 0;
+
+  const balEl = document.getElementById('balance');
+  balEl.textContent = balance === 0 ? '±0円' : (balance > 0 ? '+' : '−') + fn(balance);
+  balEl.className = 'mval ' + (balance > 0 ? 'plus' : balance < 0 ? 'minus' : 'neutral');
+
+  const rateEl = document.getElementById('rate');
+  rateEl.textContent = rate.toFixed(1) + '%';
+  rateEl.className = 'mval ' + (rate >= 100 ? 'plus' : rate >= 80 ? 'neutral' : 'minus');
+
+  const bar = document.getElementById('bar');
+  bar.style.width = Math.min(rate / 140 * 100, 100) + '%';
+  bar.style.background = rate >= 100 ? '#1baf7a' : rate >= 80 ? '#2a78d6' : '#e34948';
+  document.getElementById('bar-label').textContent = '現在 ' + rate.toFixed(1) + '%';
+
+  if (spent <= 0) return;
+  setResult(document.getElementById('r-val'), spent * (goalRate / 100) - returned);
+  setResult(document.getElementById('a-val'), goalAmt - returned);
+  const totalSpent = spent + future;
+  setFuture(document.getElementById('f-r-val'), totalSpent * (goalRate / 100) - returned, 'rate');
+  setFuture(document.getElementById('f-a-val'), goalAmt - returned, 'amount');
+}
+
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast ' + type;
+  t.style.display = 'block';
+  setTimeout(() => t.style.display = 'none', 3500);
+}
+
+function jsonp(url) {
+  return new Promise((resolve, reject) => {
+    const cbName = 'cb_' + Date.now() + '_' + Math.floor(Math.random() * 99999);
+    const script = document.createElement('script');
+    const timer = setTimeout(() => {
+      delete window[cbName];
+      if (script.parentNode) script.parentNode.removeChild(script);
+      reject(new Error('timeout'));
+    }, 15000);
+    window[cbName] = (data) => {
+      clearTimeout(timer);
+      delete window[cbName];
+      if (script.parentNode) script.parentNode.removeChild(script);
+      resolve(data);
+    };
+    script.onerror = () => {
+      clearTimeout(timer);
+      delete window[cbName];
+      if (script.parentNode) script.parentNode.removeChild(script);
+      reject(new Error('script error'));
+    };
+    const sep = url.includes('?') ? '&' : '?';
+    script.src = url + sep + 'callback=' + cbName;
+    document.body.appendChild(script);
+  });
+}
+
+async function saveRecord() {
+  const btn = document.getElementById('save-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ 保存中...';
+  const spent    = parseFloat(document.getElementById('spent').value)      || 0;
+  const returned = parseFloat(document.getElementById('returned').value)   || 0;
+  const goalRate = parseFloat(document.getElementById('goalRate').value)   || 0;
+  const goalAmt  = parseFloat(document.getElementById('goalAmount').value) || 0;
+  const memo     = document.getElementById('memo').value;
+  try {
+    const url = GAS_URL + '?action=save&spent=' + spent + '&returned=' + returned + '&goalRate=' + goalRate + '&goalAmt=' + goalAmt + '&memo=' + encodeURIComponent(memo);
+    const json = await jsonp(url);
+    if (json.status === 'ok') {
+      showToast('✅ 記録したず！ぷ～ん。', 'ok');
+    } else {
+      showToast('❌ エラーだず～: ' + json.message, 'err');
+    }
+  } catch(e) {
+    showToast('❌ 通信エラーだず～: ' + e.message, 'err');
+  }
+  btn.disabled = false;
+  btn.textContent = '💾 この内容を記録する';
+}
+
+async function deleteOne(rowIndex, btnEl) {
+  if (!confirm('この記録を消すずか？')) return;
+  btnEl.disabled = true;
+  btnEl.textContent = '⏳ 削除中...';
+  try {
+    const url = GAS_URL + '?action=delete&rowIndex=' + rowIndex;
+    const json = await jsonp(url);
+    if (json.status === 'ok') {
+      loadHistory();
+    } else {
+      alert('エラーだず～: ' + json.message);
+      btnEl.disabled = false;
+      btnEl.textContent = '🗑️ この記録を消すず';
+    }
+  } catch(e) {
+    alert('通信エラーだず～');
+    btnEl.disabled = false;
+    btnEl.textContent = '🗑️ この記録を消すず';
+  }
+}
+
+async function deleteAll() {
+  if (!confirm('履歴を全部消すずか？\nこの操作は元に戻せないず！')) return;
+  const btn = document.getElementById('del-all-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ 削除中...';
+  try {
+    const url = GAS_URL + '?action=deleteAll';
+    const json = await jsonp(url);
+    if (json.status === 'ok') {
+      document.getElementById('hist-list').innerHTML = '<div class="no-hist">全部消したず！ぷ～ん。</div>';
+      btn.style.display = 'none';
+    } else {
+      alert('エラーだず～: ' + json.message);
+    }
+  } catch(e) {
+    alert('通信エラーだず～');
+  }
+  btn.disabled = false;
+  btn.textContent = '🗑️ 履歴を全部消すず';
+}
+
+async function loadHistory() {
+  const list = document.getElementById('hist-list');
+  list.innerHTML = '<div class="no-hist">読み込み中だず～…</div>';
+  document.getElementById('del-all-btn').style.display = 'none';
+  try {
+    const url = GAS_URL + '?action=load';
+    const json = await jsonp(url);
+    if (json.status === 'ok' && json.rows.length > 0) {
+      document.getElementById('del-all-btn').style.display = 'block';
+      list.innerHTML = json.rows.map(r => {
+        const bal = Number(r.balance);
+        const balClass = bal > 0 ? 'plus' : bal < 0 ? 'minus' : '';
+        const balText = bal === 0 ? '±0円' : (bal > 0 ? '+' : '−') + Math.abs(bal).toLocaleString() + '円';
+        const memo = r.memo ? '<div class="hist-memo">📝 ' + r.memo + '</div>' : '';
+        return '<div class="hist-item">'
+          + '<div class="hist-date">🕐 ' + r.date + '</div>'
+          + '<div class="hist-grid">'
+          + '<div class="hist-row"><span class="hist-label">使った</span><span class="hist-val">' + Number(r.spent).toLocaleString() + '円</span></div>'
+          + '<div class="hist-row"><span class="hist-label">戻った</span><span class="hist-val">' + Number(r.returned).toLocaleString() + '円</span></div>'
+          + '<div class="hist-row"><span class="hist-label">収支</span><span class="hist-val ' + balClass + '">' + balText + '</span></div>'
+          + '<div class="hist-row"><span class="hist-label">回収率</span><span class="hist-val">' + r.rate + '%</span></div>'
+          + '</div>' + memo
+          + '<button class="hist-del-btn" onclick="deleteOne(' + r.rowIndex + ', this)">🗑️ この記録を消すず</button>'
+          + '</div>';
+      }).join('');
+    } else if (json.status === 'ok') {
+      list.innerHTML = '<div class="no-hist">まだ記録がないず</div>';
+    } else {
+      list.innerHTML = '<div class="no-hist">エラーだず～: ' + json.message + '</div>';
+    }
+  } catch(e) {
+    list.innerHTML = '<div class="no-hist">通信エラーだず～: ' + e.message + '</div>';
+  }
+}
+
+calc();
+</script>
+</body>
+</html>
